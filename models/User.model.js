@@ -18,12 +18,14 @@ const userSchema = new Schema({
     unique: true,
   },
   phone: {
-    require: true,
+    require: false,
     type: String,
+    default: ''
   },
   photo: {
     require: false,
     type: String,
+    default: ''
   },
 });
 

@@ -23,6 +23,10 @@ app.get("/", async (req, res) => {
   res.send("ParcelBee server is Running");
 });
 
+app.get("/users", async (req, res) => {
+  return res.send(await User.find(req.query));
+});
+
 app.post("/users", async (req, res) => {
   try {
     const user = new User(req.body);
