@@ -3,46 +3,46 @@ const { Schema } = mongoose;
 
 const parcelSchema = new Schema(
   {
-    user_id: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       require: true,
     },
     parcel_type: {
       type: String,
-      require: true
+      require: true,
     },
     parcel_weight: {
       type: Number,
-      require: true
+      require: true,
     },
     receiver_name: {
       type: String,
-      require: true
+      require: true,
     },
     receiver_phone: {
       type: String,
-      require: true
+      require: true,
     },
     delivery_address: {
       type: String,
-      require: true
+      require: true,
     },
     address_latitude: {
       type: Number,
       min: -90,
       max: 90,
-      require: true
+      require: true,
     },
     address_longitude: {
       type: Number,
       min: -180,
       max: 180,
-      require: true
+      require: true,
     },
     requested_delivery_date: {
       type: Date,
-      require: true
+      require: true,
     },
     delivery_date: {
       type: Date,
@@ -52,15 +52,15 @@ const parcelSchema = new Schema(
     },
     price: {
       type: Number,
-      require: true
+      require: true,
     },
     delivery_man_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
     booking_status: {
       type: String,
-      enum: ["pending", "on_the_way", "delivered", 'returned', 'cancelled'],
+      enum: ["pending", "on_the_way", "delivered", "returned", "cancelled"],
       default: "pending",
       require: true,
     },
@@ -72,11 +72,11 @@ const parcelSchema = new Schema(
     },
     rating: {
       type: Number,
-      default: 0
+      default: 0,
     },
     review: {
       type: String,
-      default: ""
+      default: "",
     },
     review_giving_date: {
       type: Date,
@@ -84,7 +84,8 @@ const parcelSchema = new Schema(
   },
   {
     timestamps: {
-      createdAt: "booking_date", // Change the name of the createdAt field
+      createdAt: "booking_date",
+      updatedAt: "last_updated_date",
     },
   }
 );
