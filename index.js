@@ -48,24 +48,60 @@ app.post("/users", async (req, res) => {
 
 app.get("/parcels", async (req, res) => {
   try {
-    return res.send(await Parcel.find(req.query).populate('user'));
+    return res.send(await Parcel.find(req.query).populate("user"));
   } catch (err) {
     console.error(err);
   }
 });
 
 app.post("/parcels", async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
+    session.startTransaction();
+    await User.updateOne(
+      { _id: req.body.user },
+      { $set: { phone: req.body.phone } }
+    );
     const parcel = new Parcel(req.body);
     const result = await parcel.save();
+    await session.commitTransaction();
+
     return res.status(201).send(result);
   } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+
     if (err.name === "ValidationError") {
       res.status(400).send(err.message);
     } else {
       res.status(500).send("Something went wrong");
     }
   }
+});
+
+app.put("/parcels/:id", async (req, res) => {
+  const { _id, user, name, email, phone, ...rest } = req.body;
+  console.log(req.body)
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+    await User.updateOne({ _id: user }, { $set: { phone: phone } });
+    const result = await Parcel.updateOne({ _id: _id }, { $set: { ...rest } });
+    await session.commitTransaction();
+    return res.status(200).send(result);
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+
+    if (err.name === "ValidationError") {
+      res.status(400).send(err.message);
+    } else {
+      res.status(500).send("Something went wrong");
+    }
+  }
+  return res.send("help");
 });
 
 app.listen(port, () => {

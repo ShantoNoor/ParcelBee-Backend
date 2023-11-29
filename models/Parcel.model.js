@@ -54,7 +54,7 @@ const parcelSchema = new Schema(
       type: Number,
       require: true,
     },
-    delivery_man_id: {
+    delivery_man: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
