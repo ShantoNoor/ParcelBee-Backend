@@ -21,7 +21,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", async (req, res) => {
-  res.send("ParcelBee server is Running");
+  return res.send("ParcelBee server is Running");
 });
 
 app.get("/users", async (req, res) => {
@@ -39,16 +39,42 @@ app.post("/users", async (req, res) => {
     return res.status(201).send(result);
   } catch (err) {
     if (err.name === "ValidationError") {
-      res.status(400).send(err.message);
+      return res.status(400).send(err.message);
     } else {
-      res.status(409).send("User already exists");
+      return res.status(409).send("User already exists");
+    }
+  }
+});
+
+app.put("/users", async (req, res) => {
+  try {
+    const result = await User.updateOne(
+      { _id: req.body._id },
+      {
+        $set: {
+          name: req.body.name,
+          phone: req.body.phone,
+          status: req.body.status,
+          photo: req.body.photo,
+        },
+      }
+    );
+    return res.status(200).send(result);
+  } catch (err) {
+    if (err.name === "ValidationError") {
+      return res.status(400).send(err.message);
+    } else {
+      return res.status(500).send("Something went wrong");
     }
   }
 });
 
 app.get("/parcels", async (req, res) => {
   try {
-    return res.send(await Parcel.find(req.query).populate("user"));
+    const { booking_status, ...query } = req.query;
+    if (booking_status && booking_status !== "all")
+      query.booking_status = booking_status;
+    return res.send(await Parcel.find(query).populate("user"));
   } catch (err) {
     console.error(err);
   }
@@ -73,9 +99,9 @@ app.post("/parcels", async (req, res) => {
     session.endSession();
 
     if (err.name === "ValidationError") {
-      res.status(400).send(err.message);
+      return res.status(400).send(err.message);
     } else {
-      res.status(500).send("Something went wrong");
+      return res.status(500).send("Something went wrong");
     }
   }
 });
@@ -95,12 +121,11 @@ app.put("/parcels/:id", async (req, res) => {
     session.endSession();
 
     if (err.name === "ValidationError") {
-      res.status(400).send(err.message);
+      return res.status(400).send(err.message);
     } else {
-      res.status(500).send("Something went wrong");
+      return res.status(500).send("Something went wrong");
     }
   }
-  return res.send("help");
 });
 
 app.listen(port, () => {
