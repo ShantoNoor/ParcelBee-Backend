@@ -82,7 +82,6 @@ app.post("/parcels", async (req, res) => {
 
 app.put("/parcels/:id", async (req, res) => {
   const { _id, user, name, email, phone, ...rest } = req.body;
-  console.log(req.body)
   const session = await mongoose.startSession();
 
   try {
