@@ -132,9 +132,20 @@ app.get("/users_stats", async (req, res) => {
           },
         },
       },
+      {
+        $skip: 5 * req.query.page,
+      },
+      {
+        $limit: 5,
+      },
     ]);
 
-    return res.send(result);
+    const total_count = await User.countDocuments({ status: "user" });
+
+    return res.send({
+      data: result,
+      total_count,
+    });
   } catch (err) {
     if (err.name === "ValidationError") {
       return res.status(400).send(err.message);
@@ -182,11 +193,35 @@ app.get("/delivery_man_stats", async (req, res) => {
             $cond: {
               if: { $ne: [{ $size: "$product_details" }, 0] },
               then: {
-                $avg: "$product_details.rating",
+                $avg: {
+                  $map: {
+                    input: {
+                      $filter: {
+                        input: "$product_details",
+                        cond: { $ne: ["$$this.rating", 0] },
+                      },
+                    },
+                    in: {
+                      $cond: {
+                        if: { $eq: ["$$this.rating", null] },
+                        then: 0,
+                        else: "$$this.rating",
+                      },
+                    },
+                  },
+                },
               },
               else: 0,
             },
           },
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          phone: 1,
+          delivered: 1,
+          avg_rating: { $ifNull: ["$avg_rating", 0] },
         },
       },
     ]);
@@ -239,11 +274,35 @@ app.get("/delivery_man_top_five", async (req, res) => {
             $cond: {
               if: { $ne: [{ $size: "$product_details" }, 0] },
               then: {
-                $avg: "$product_details.rating",
+                $avg: {
+                  $map: {
+                    input: {
+                      $filter: {
+                        input: "$product_details",
+                        cond: { $ne: ["$$this.rating", 0] },
+                      },
+                    },
+                    in: {
+                      $cond: {
+                        if: { $eq: ["$$this.rating", null] },
+                        then: 0,
+                        else: "$$this.rating",
+                      },
+                    },
+                  },
+                },
               },
               else: 0,
             },
           },
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          photo: 1,
+          delivered: 1,
+          avg_rating: { $ifNull: ["$avg_rating", 0] },
         },
       },
       {
