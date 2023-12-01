@@ -69,7 +69,43 @@ app.put("/users", async (req, res) => {
   }
 });
 
-app.get("/users/delivery_man", async (req, res) => {
+app.get("/users_stats", async (req, res) => {
+  const result = await User.aggregate([
+    {
+      $match: {
+        status: "user",
+      },
+    },
+    {
+      $lookup: {
+        from: "parcels",
+        localField: "_id",
+        foreignField: "user",
+        as: "product_details",
+      },
+    },
+    {
+      $project: {
+        name: 1,
+        phone: 1,
+        booked: { $size: "$product_details" },
+        total_price: {
+          $cond: {
+            if: { $eq: [{ $size: "$product_details" }, 0] },
+            then: 0,
+            else: {
+              $sum: "$product_details.price",
+            },
+          },
+        },
+      },
+    },
+  ]);
+
+  return res.send(result);
+});
+
+app.get("/delivery_man_stats", async (req, res) => {
   const result = await User.aggregate([
     {
       $match: {
@@ -104,7 +140,7 @@ app.get("/users/delivery_man", async (req, res) => {
         },
         avg_rating: {
           $cond: {
-            if: { $ne: [{$size: "$product_details"}, 0] },
+            if: { $ne: [{ $size: "$product_details" }, 0] },
             then: {
               $avg: "$product_details.rating",
             },
