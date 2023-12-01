@@ -47,16 +47,17 @@ app.post("/users", async (req, res) => {
 });
 
 app.put("/users", async (req, res) => {
+  const data = {};
+  if (req?.body?.name) data.name = req.body.name;
+  if (req?.body?.phone) data.phone = req.body.phone;
+  if (req?.body?.status) data.status = req.body.status;
+  if (req?.body?.photo) data.photo = req.body.photo;
+
   try {
     const result = await User.updateOne(
       { _id: req.body._id },
       {
-        $set: {
-          name: req.body.name,
-          phone: req.body.phone,
-          status: req.body.status,
-          photo: req.body.photo,
-        },
+        $set: data,
       }
     );
     return res.status(200).send(result);
