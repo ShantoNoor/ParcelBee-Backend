@@ -173,6 +173,64 @@ app.get("/delivery_man_stats", async (req, res) => {
   return res.send(result);
 });
 
+app.get("/delivery_man_top_five", async (req, res) => {
+  const result = await User.aggregate([
+    {
+      $match: {
+        status: "delivery_man",
+      },
+    },
+    {
+      $lookup: {
+        from: "parcels",
+        localField: "_id",
+        foreignField: "delivery_man",
+        as: "product_details",
+      },
+    },
+    {
+      $project: {
+        name: 1,
+        photo: 1,
+        delivered: {
+          $cond: {
+            if: { $isArray: "$product_details" },
+            then: {
+              $size: {
+                $filter: {
+                  input: "$product_details",
+                  cond: { $eq: ["$$this.booking_status", "delivered"] },
+                },
+              },
+            },
+            else: 0,
+          },
+        },
+        avg_rating: {
+          $cond: {
+            if: { $ne: [{ $size: "$product_details" }, 0] },
+            then: {
+              $avg: "$product_details.rating",
+            },
+            else: 0,
+          },
+        },
+      },
+    },
+    {
+      $sort: {
+        delivered: -1,
+        avg_rating: -1
+      }
+    },
+    {
+      $limit: 5
+    }
+  ]);
+
+  return res.send(result);
+});
+
 app.get("/parcels", async (req, res) => {
   try {
     const { booking_status, ...query } = req.query;
