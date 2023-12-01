@@ -24,6 +24,24 @@ app.get("/", async (req, res) => {
   return res.send("ParcelBee server is Running");
 });
 
+app.get("/home_stats", async (req, res) => {
+  const r = await Promise.all([
+    Parcel.countDocuments(),
+    Parcel.countDocuments({
+      booking_status: "delivered",
+    }),
+    User.countDocuments(),
+  ]);
+
+  const result = {
+    booked: r[0],
+    delivered: r[1],
+    registered: r[2],
+  };
+
+  res.send(result);
+});
+
 app.get("/users", async (req, res) => {
   try {
     return res.send(await User.find(req.query));
