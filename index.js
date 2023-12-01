@@ -25,28 +25,40 @@ app.get("/", async (req, res) => {
 });
 
 app.get("/home_stats", async (req, res) => {
-  const r = await Promise.all([
-    Parcel.countDocuments(),
-    Parcel.countDocuments({
-      booking_status: "delivered",
-    }),
-    User.countDocuments(),
-  ]);
+  try {
+    const r = await Promise.all([
+      Parcel.countDocuments(),
+      Parcel.countDocuments({
+        booking_status: "delivered",
+      }),
+      User.countDocuments(),
+    ]);
 
-  const result = {
-    booked: r[0],
-    delivered: r[1],
-    registered: r[2],
-  };
+    const result = {
+      booked: r[0],
+      delivered: r[1],
+      registered: r[2],
+    };
 
-  res.send(result);
+    res.send(result);
+  } catch (err) {
+    if (err.name === "ValidationError") {
+      return res.status(400).send(err.message);
+    } else {
+      return res.status(500).send("Something went wrong");
+    }
+  }
 });
 
 app.get("/users", async (req, res) => {
   try {
     return res.send(await User.find(req.query));
   } catch (err) {
-    console.error(err);
+    if (err.name === "ValidationError") {
+      return res.status(400).send(err.message);
+    } else {
+      return res.status(500).send("Something went wrong");
+    }
   }
 });
 
@@ -89,146 +101,202 @@ app.put("/users", async (req, res) => {
 });
 
 app.get("/users_stats", async (req, res) => {
-  const result = await User.aggregate([
-    {
-      $match: {
-        status: "user",
+  try {
+    const result = await User.aggregate([
+      {
+        $match: {
+          status: "user",
+        },
       },
-    },
-    {
-      $lookup: {
-        from: "parcels",
-        localField: "_id",
-        foreignField: "user",
-        as: "product_details",
+      {
+        $lookup: {
+          from: "parcels",
+          localField: "_id",
+          foreignField: "user",
+          as: "product_details",
+        },
       },
-    },
-    {
-      $project: {
-        name: 1,
-        phone: 1,
-        booked: { $size: "$product_details" },
-        total_price: {
-          $cond: {
-            if: { $eq: [{ $size: "$product_details" }, 0] },
-            then: 0,
-            else: {
-              $sum: "$product_details.price",
+      {
+        $project: {
+          name: 1,
+          phone: 1,
+          booked: { $size: "$product_details" },
+          total_price: {
+            $cond: {
+              if: { $eq: [{ $size: "$product_details" }, 0] },
+              then: 0,
+              else: {
+                $sum: "$product_details.price",
+              },
             },
           },
         },
       },
-    },
-  ]);
+    ]);
 
-  return res.send(result);
+    return res.send(result);
+  } catch (err) {
+    if (err.name === "ValidationError") {
+      return res.status(400).send(err.message);
+    } else {
+      return res.status(500).send("Something went wrong");
+    }
+  }
 });
 
 app.get("/delivery_man_stats", async (req, res) => {
-  const result = await User.aggregate([
-    {
-      $match: {
-        status: "delivery_man",
+  try {
+    const result = await User.aggregate([
+      {
+        $match: {
+          status: "delivery_man",
+        },
       },
-    },
-    {
-      $lookup: {
-        from: "parcels",
-        localField: "_id",
-        foreignField: "delivery_man",
-        as: "product_details",
+      {
+        $lookup: {
+          from: "parcels",
+          localField: "_id",
+          foreignField: "delivery_man",
+          as: "product_details",
+        },
       },
-    },
-    {
-      $project: {
-        name: 1,
-        phone: 1,
-        delivered: {
-          $cond: {
-            if: { $isArray: "$product_details" },
-            then: {
-              $size: {
-                $filter: {
-                  input: "$product_details",
-                  cond: { $eq: ["$$this.booking_status", "delivered"] },
+      {
+        $project: {
+          name: 1,
+          phone: 1,
+          delivered: {
+            $cond: {
+              if: { $isArray: "$product_details" },
+              then: {
+                $size: {
+                  $filter: {
+                    input: "$product_details",
+                    cond: { $eq: ["$$this.booking_status", "delivered"] },
+                  },
                 },
               },
+              else: 0,
             },
-            else: 0,
           },
-        },
-        avg_rating: {
-          $cond: {
-            if: { $ne: [{ $size: "$product_details" }, 0] },
-            then: {
-              $avg: "$product_details.rating",
+          avg_rating: {
+            $cond: {
+              if: { $ne: [{ $size: "$product_details" }, 0] },
+              then: {
+                $avg: "$product_details.rating",
+              },
+              else: 0,
             },
-            else: 0,
           },
         },
       },
-    },
-  ]);
+    ]);
 
-  return res.send(result);
+    return res.send(result);
+  } catch (err) {
+    if (err.name === "ValidationError") {
+      return res.status(400).send(err.message);
+    } else {
+      return res.status(500).send("Something went wrong");
+    }
+  }
 });
 
 app.get("/delivery_man_top_five", async (req, res) => {
-  const result = await User.aggregate([
-    {
-      $match: {
-        status: "delivery_man",
+  try {
+    const result = await User.aggregate([
+      {
+        $match: {
+          status: "delivery_man",
+        },
       },
-    },
-    {
-      $lookup: {
-        from: "parcels",
-        localField: "_id",
-        foreignField: "delivery_man",
-        as: "product_details",
+      {
+        $lookup: {
+          from: "parcels",
+          localField: "_id",
+          foreignField: "delivery_man",
+          as: "product_details",
+        },
       },
-    },
-    {
-      $project: {
-        name: 1,
-        photo: 1,
-        delivered: {
-          $cond: {
-            if: { $isArray: "$product_details" },
-            then: {
-              $size: {
-                $filter: {
-                  input: "$product_details",
-                  cond: { $eq: ["$$this.booking_status", "delivered"] },
+      {
+        $project: {
+          name: 1,
+          photo: 1,
+          delivered: {
+            $cond: {
+              if: { $isArray: "$product_details" },
+              then: {
+                $size: {
+                  $filter: {
+                    input: "$product_details",
+                    cond: { $eq: ["$$this.booking_status", "delivered"] },
+                  },
                 },
               },
+              else: 0,
             },
-            else: 0,
           },
-        },
-        avg_rating: {
-          $cond: {
-            if: { $ne: [{ $size: "$product_details" }, 0] },
-            then: {
-              $avg: "$product_details.rating",
+          avg_rating: {
+            $cond: {
+              if: { $ne: [{ $size: "$product_details" }, 0] },
+              then: {
+                $avg: "$product_details.rating",
+              },
+              else: 0,
             },
-            else: 0,
           },
         },
       },
-    },
-    {
-      $sort: {
-        delivered: -1,
-        avg_rating: -1,
+      {
+        $sort: {
+          delivered: -1,
+          avg_rating: -1,
+        },
       },
-    },
-    {
-      $limit: 5,
-    },
-  ]);
+      {
+        $limit: 5,
+      },
+    ]);
 
-  return res.send(result);
+    return res.send(result);
+  } catch (err) {
+    if (err.name === "ValidationError") {
+      return res.status(400).send(err.message);
+    } else {
+      return res.status(500).send("Something went wrong");
+    }
+  }
+});
+
+app.get("/graph_stats", async (req, res) => {
+  try {
+    const result = await Parcel.aggregate([
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%m-%d-%Y",
+              date: { $toDate: "$_id" },
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          x: "$_id",
+          y: "$count",
+        },
+      },
+    ]);
+    return res.send(result);
+  } catch (err) {
+    if (err.name === "ValidationError") {
+      return res.status(400).send(err.message);
+    } else {
+      return res.status(500).send("Something went wrong");
+    }
+  }
 });
 
 app.get("/parcels", async (req, res) => {
@@ -246,7 +314,11 @@ app.get("/parcels", async (req, res) => {
 
     return res.send(await Parcel.find(query).populate("user"));
   } catch (err) {
-    console.error(err);
+    if (err.name === "ValidationError") {
+      return res.status(400).send(err.message);
+    } else {
+      return res.status(500).send("Something went wrong");
+    }
   }
 });
 
