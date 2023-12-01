@@ -69,6 +69,55 @@ app.put("/users", async (req, res) => {
   }
 });
 
+app.get("/users/delivery_man", async (req, res) => {
+  const result = await User.aggregate([
+    {
+      $match: {
+        status: "delivery_man",
+      },
+    },
+    {
+      $lookup: {
+        from: "parcels",
+        localField: "_id",
+        foreignField: "delivery_man",
+        as: "product_details",
+      },
+    },
+    {
+      $project: {
+        name: 1,
+        phone: 1,
+        delivered: {
+          $cond: {
+            if: { $isArray: "$product_details" },
+            then: {
+              $size: {
+                $filter: {
+                  input: "$product_details",
+                  cond: { $eq: ["$$this.booking_status", "delivered"] },
+                },
+              },
+            },
+            else: 0,
+          },
+        },
+        avg_rating: {
+          $cond: {
+            if: { $ne: [{$size: "$product_details"}, 0] },
+            then: {
+              $avg: "$product_details.rating",
+            },
+            else: 0,
+          },
+        },
+      },
+    },
+  ]);
+
+  return res.send(result);
+});
+
 app.get("/parcels", async (req, res) => {
   try {
     const { booking_status, ...query } = req.query;
@@ -107,6 +156,7 @@ app.post("/parcels", async (req, res) => {
 });
 
 app.put("/parcels/:id", async (req, res) => {
+  // eslint-disable-next-line no-unused-vars
   const { _id, user, name, email, phone, ...rest } = req.body;
   const session = await mongoose.startSession();
 
