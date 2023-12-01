@@ -220,12 +220,12 @@ app.get("/delivery_man_top_five", async (req, res) => {
     {
       $sort: {
         delivered: -1,
-        avg_rating: -1
-      }
+        avg_rating: -1,
+      },
     },
     {
-      $limit: 5
-    }
+      $limit: 5,
+    },
   ]);
 
   return res.send(result);
@@ -233,9 +233,17 @@ app.get("/delivery_man_top_five", async (req, res) => {
 
 app.get("/parcels", async (req, res) => {
   try {
-    const { booking_status, ...query } = req.query;
+    const { booking_status, start, end, ...query } = req.query;
     if (booking_status && booking_status !== "all")
       query.booking_status = booking_status;
+    if (start && end) {
+      query.requested_delivery_date = { $gte: start, $lte: end };
+    } else if (start) {
+      query.requested_delivery_date = { $gte: start };
+    } else if (end) {
+      query.requested_delivery_date = { $lte: end };
+    }
+
     return res.send(await Parcel.find(query).populate("user"));
   } catch (err) {
     console.error(err);
